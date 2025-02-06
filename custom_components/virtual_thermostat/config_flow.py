@@ -2,6 +2,8 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers import selector
 
+DOMAIN = "virtual_thermostat"
+
 class VirtualThermostatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
@@ -13,13 +15,12 @@ class VirtualThermostatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
-                vol.Required(CONF_SENSOR): selector.EntitySelector(
+                vol.Required("sensor"): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="sensor")
                 ),
-                vol.Required(CONF_THERMOSTAT): selector.EntitySelector(
+                vol.Required("thermostat"): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="climate")
                 ),
-                vol.Required(CONF_OFFSET, default=0): vol.Coerce(float),
             }),
             errors=errors,
         )

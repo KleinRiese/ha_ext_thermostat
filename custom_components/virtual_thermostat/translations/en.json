@@ -5,8 +5,7 @@
           "title": "Configure Virtual Thermostat",
           "data": {
             "sensor": "Temperature Sensor",
-            "thermostat": "Target Thermostat",
-            "offset": "Temperature Offset"
+            "thermostat": "Target Thermostat"
           }
         }
       }

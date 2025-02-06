@@ -2,6 +2,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .climate import VirtualThermostat
 
+DOMAIN = "virtual_thermostat"
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data.setdefault(DOMAIN, {})
     config = entry.data
