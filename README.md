@@ -1,0 +1,1 @@
+# ha_ext_thermostat
