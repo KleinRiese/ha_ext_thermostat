@@ -1,91 +1,71 @@
-from homeassistant.components.climate import ClimateEntity, HVACMode
-from homeassistant.components.climate.const import ClimateEntityFeature
-from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.helpers.restore_state import RestoreEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+import logging
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the climate platform for the virtual thermostat."""
-    # Erstelle die Entität
-    thermostat = VirtualThermostat(hass, entry.data)
-    
-    # Füge die Entität hinzu
-    async_add_entities([thermostat])
+from homeassistant.components.climate import ClimateEntity
+from homeassistant.components.climate.const import HVAC_MODE_HEAT, SUPPORT_TARGET_TEMPERATURE
+from homeassistant.const import ATTR_TEMPERATURE, TEMP_CELSIUS
+from homeassistant.core import callback
 
-class VirtualThermostat(ClimateEntity, RestoreEntity):
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
-    _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
-    _attr_hvac_mode = HVACMode.HEAT  # Standardmodus: Heizen
+_LOGGER = logging.getLogger(__name__)
 
-    def __init__(self, hass, config):
-        self._hass = hass
-        self._sensor = config["sensor"]
-        self._thermostat = config["thermostat"]
-        self._target_temperature = None
+class VirtualThermostat(ClimateEntity):
+    def __init__(self, hass, name, sensor_entity_id, thermostat_entity_id):
+        self.hass = hass
+        self._name = name
+        self._sensor_entity_id = sensor_entity_id
+        self._thermostat_entity_id = thermostat_entity_id
+        self._target_temperature = 20.0  # Standard-Sollwert
         self._current_temperature = None
-
+        self._thermostat_temperature = None
+        
     @property
     def name(self):
-        return "Virtual Thermostat"
-
+        return self._name
+    
     @property
-    def unique_id(self):
-        return f"virtual_thermostat_{self._sensor}_{self._thermostat}"
-
-    async def async_added_to_hass(self):
-        await super().async_added_to_hass()
-        
-        # Wiederherstellen des vorherigen Zustands
-        state = await self.async_get_last_state()
-        if state:
-            self._target_temperature = state.attributes.get("temperature")
-            self._attr_hvac_mode = state.attributes.get("hvac_mode", HVACMode.HEAT)
-        
-        # Überwache den Sensor
-        self.async_on_remove(
-            self._hass.helpers.event.async_track_state_change(
-                self._sensor, self._async_sensor_updated
-            )
-        )
-
-    async def _async_sensor_updated(self, entity_id, old_state, new_state):
-        if new_state is None:
-            return
-        self._current_temperature = float(new_state.state)
-        await self._update_thermostat()
-
-    async def _update_thermostat(self):
-        if self._target_temperature is None or self._current_temperature is None:
-            return
-
-        # Berechne die Abweichung
-        deviation = self._target_temperature - self._current_temperature
-
-        # Setze die Zieltemperatur am externen Thermostaten
-        target_temp = self._current_temperature + deviation
-        await self._hass.services.async_call(
-            "climate",
-            "set_temperature",
-            {"entity_id": self._thermostat, "temperature": target_temp},
-        )
-        self.async_write_ha_state()
-
+    def temperature_unit(self):
+        return TEMP_CELSIUS
+    
     @property
     def current_temperature(self):
         return self._current_temperature
-
+    
     @property
     def target_temperature(self):
         return self._target_temperature
-
-    async def async_set_temperature(self, **kwargs):
-        self._target_temperature = kwargs.get(ATTR_TEMPERATURE)
-        await self._update_thermostat()
-        self.async_write_ha_state()
+    
+    @property
+    def hvac_mode(self):
+        return HVAC_MODE_HEAT
+    
+    @property
+    def supported_features(self):
+        return SUPPORT_TARGET_TEMPERATURE
+    
+    def set_temperature(self, **kwargs):
+        if ATTR_TEMPERATURE in kwargs:
+            self._target_temperature = kwargs[ATTR_TEMPERATURE]
+            self._update_real_thermostat()
+            self.schedule_update_ha_state()
+    
+    @callback
+    def async_update(self):
+        sensor_state = self.hass.states.get(self._sensor_entity_id)
+        thermostat_state = self.hass.states.get(self._thermostat_entity_id)
+        
+        if sensor_state and sensor_state.state not in [None, "unknown", "unavailable"]:
+            self._current_temperature = float(sensor_state.state)
+        
+        if thermostat_state and thermostat_state.state not in [None, "unknown", "unavailable"]:
+            self._thermostat_temperature = float(thermostat_state.state)
+        
+        self._update_real_thermostat()
+    
+    def _update_real_thermostat(self):
+        if self._current_temperature is not None and self._thermostat_temperature is not None:
+            offset = self._current_temperature - self._thermostat_temperature
+            real_target = self._target_temperature + offset
+            self.hass.services.call(
+                "climate", "set_temperature", 
+                {"entity_id": self._thermostat_entity_id, "temperature": real_target}
+            )
+        _LOGGER.debug("Updated real thermostat: %s", self._thermostat_entity_id)
