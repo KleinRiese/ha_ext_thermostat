@@ -24,7 +24,7 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
 
     @property
     def unique_id(self):
-        return "virtual_thermostat_unique_id"
+        return f"virtual_thermostat_{self._sensor}_{self._thermostat}"
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()

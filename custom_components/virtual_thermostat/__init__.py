@@ -2,7 +2,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .climate import VirtualThermostat
 
-DOMAIN = "virtual_thermostat"
+DOMAIN = "ext_thermostat"
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # Erstelle die Entität
@@ -13,9 +13,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     hass.data[DOMAIN][entry.entry_id] = thermostat
     
     # Registriere die Entität für die climate-Plattform
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setup(entry, "climate")
-    )
+    await hass.config_entries.async_forward_entry_setup(entry, "climate")
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
