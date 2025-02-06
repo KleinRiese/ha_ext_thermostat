@@ -1,8 +1,5 @@
-from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import (
-    HVACMode,
-    ClimateEntityFeature,
-)
+from homeassistant.components.climate import ClimateEntity, HVACMode
+from homeassistant.components.climate.const import ClimateEntityFeature
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.config_entries import ConfigEntry
@@ -25,6 +22,7 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
     _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
+    _attr_hvac_mode = HVACMode.HEAT  # Standardmodus: Heizen
 
     def __init__(self, hass, config):
         self._hass = hass
@@ -48,6 +46,7 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
         state = await self.async_get_last_state()
         if state:
             self._target_temperature = state.attributes.get("temperature")
+            self._attr_hvac_mode = state.attributes.get("hvac_mode", HVACMode.HEAT)
         
         # Überwache den Sensor
         self.async_on_remove(
