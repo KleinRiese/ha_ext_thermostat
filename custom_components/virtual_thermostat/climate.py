@@ -20,6 +20,13 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
+        
+        # Wiederherstellen des vorherigen Zustands
+        state = await self.async_get_last_state()
+        if state:
+            self._target_temperature = state.attributes.get("temperature")
+        
+        # Überwache den Sensor
         self.async_on_remove(
             self._hass.helpers.event.async_track_state_change(
                 self._sensor, self._async_sensor_updated
@@ -36,14 +43,17 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
         if self._target_temperature is None or self._current_temperature is None:
             return
 
-        # Berechne die Zieltemperatur für den externen Thermostaten
-        target_temp = self._target_temperature
+        # Setze die Zieltemperatur am externen Thermostaten
         await self._hass.services.async_call(
             "climate",
             "set_temperature",
-            {"entity_id": self._thermostat, "temperature": target_temp},
+            {"entity_id": self._thermostat, "temperature": self._target_temperature},
         )
         self.async_write_ha_state()
+
+    @property
+    def name(self):
+        return "Virtual Thermostat"
 
     @property
     def current_temperature(self):
