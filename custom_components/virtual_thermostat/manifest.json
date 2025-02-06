@@ -7,5 +7,4 @@
     "codeowners": ["@your-github"],
     "config_flow": true,
     "iot_class": "local_polling",
-    "integration_type": "hub"
   }
