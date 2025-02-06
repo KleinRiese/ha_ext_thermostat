@@ -1,16 +1,11 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .climate import VirtualThermostat
 
 DOMAIN = "ext_thermostat"
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
-    # Erstelle die Entität
-    thermostat = VirtualThermostat(hass, entry.data)
-    
     # Füge die Entität zu Home Assistant hinzu
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = thermostat
     
     # Registriere die Entität für die climate-Plattform
     await hass.config_entries.async_forward_entry_setup(entry, "climate")

@@ -5,6 +5,21 @@ from homeassistant.components.climate.const import (
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up the climate platform for the virtual thermostat."""
+    # Erstelle die Entität
+    thermostat = VirtualThermostat(hass, entry.data)
+    
+    # Füge die Entität hinzu
+    async_add_entities([thermostat])
 
 class VirtualThermostat(ClimateEntity, RestoreEntity):
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
