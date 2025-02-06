@@ -1,0 +1,11 @@
+{
+    "domain": "virtual_thermostat",
+    "name": "Virtual Thermostat",
+    "version": "1.0.0",
+    "documentation": "https://github.com/your-repo/docs",
+    "requirements": [],
+    "codeowners": ["@your-github"],
+    "config_flow": true,
+    "iot_class": "local_polling",
+    "integration_type": "hub"
+  }
