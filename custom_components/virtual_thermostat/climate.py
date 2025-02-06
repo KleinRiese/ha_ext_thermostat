@@ -18,6 +18,14 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
         self._target_temperature = None
         self._current_temperature = None
 
+    @property
+    def name(self):
+        return "Virtual Thermostat"
+
+    @property
+    def unique_id(self):
+        return "virtual_thermostat_unique_id"
+
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
         
@@ -50,10 +58,6 @@ class VirtualThermostat(ClimateEntity, RestoreEntity):
             {"entity_id": self._thermostat, "temperature": self._target_temperature},
         )
         self.async_write_ha_state()
-
-    @property
-    def name(self):
-        return "Virtual Thermostat"
 
     @property
     def current_temperature(self):
